@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>AI Chat</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#f2f2f2;
+}
+
+#chat{
+    width:600px;
+    height:500px;
+    margin:auto;
+    background:white;
+    border-radius:10px;
+    padding:20px;
+    overflow-y:auto;
+}
+
+.message{
+    margin:10px 0;
+}
+
+.user{
+    text-align:right;
+}
+
+.ai{
+    text-align:left;
+}
+
+.bubble{
+    display:inline-block;
+    padding:10px 15px;
+    border-radius:10px;
+    max-width:70%;
+}
+
+.user .bubble{
+    background:#007bff;
+    color:white;
+}
+
+.ai .bubble{
+    background:#e5e5ea;
+}
+
+#input-area{
+    width:600px;
+    margin:auto;
+    margin-top:10px;
+    display:flex;
+}
+
+#input{
+    flex:1;
+    padding:10px;
+    font-size:16px;
+}
+
+button{
+    padding:10px 20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2 style="text-align:center">AI聊天机器人</h2>
+
+<div id="chat"></div>
+
+<div id="input-area">
+<input id="input" placeholder="输入消息..." />
+<button onclick="send()">发送</button>
+</div>
+
+<script>
+
+let input = document.getElementById("input")
+
+input.addEventListener("keydown", function(event){
+    if(event.key === "Enter"){
+        send()
+    }
+})
+
+function addMessage(text, sender){
+
+    let chat = document.getElementById("chat")
+
+    let msg = document.createElement("div")
+    msg.className = "message " + sender
+
+    let bubble = document.createElement("div")
+    bubble.className = "bubble"
+    bubble.innerText = text
+
+    msg.appendChild(bubble)
+    chat.appendChild(msg)
+
+    chat.scrollTop = chat.scrollHeight
+}
+
+async function send(){
+
+    let message = input.value
+
+    if(message.trim()=="") return
+
+    addMessage(message,"user")
+
+    input.value=""
+
+    let response = await fetch("/chat",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({message:message})
+    })
+
+    let reader = response.body.getReader()
+    let decoder = new TextDecoder()
+
+    let chat = document.getElementById("chat")
+
+    let msg = document.createElement("div")
+    msg.className = "message ai"
+
+    let bubble = document.createElement("div")
+    bubble.className = "bubble"
+
+    msg.appendChild(bubble)
+    chat.appendChild(msg)
+
+    while(true){
+
+        let {done,value} = await reader.read()
+
+        if(done) break
+
+        bubble.innerText += decoder.decode(value)
+
+        chat.scrollTop = chat.scrollHeight
+    }
+}
+function addTyping(){
+
+    let chat = document.getElementById("chat")
+
+    let msg = document.createElement("div")
+    msg.className = "message ai"
+
+    let bubble = document.createElement("div")
+    bubble.className = "bubble"
+    bubble.innerText = "AI正在输入..."
+
+    msg.appendChild(bubble)
+    chat.appendChild(msg)
+
+    chat.scrollTop = chat.scrollHeight
+
+    return msg
+}
+
+</script>
+
+</body>
+</html>
